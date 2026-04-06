@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+.wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+}
+input[type=text], input[type=password] {
+    width: 100%;
+    margin: 0.5rem 0;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+button {
+    margin: 0.5rem 0;
+    width: 100%;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+}
+        </style>
+    </head>
+    <body>
+        <header class="header">
+            <div class="container header__inner">
+                <a href="/" class="header__logo">Мессенджер</a>
+
+                <nav class="header__nav">
+                </nav>
+            </div>
+        </header>
+
+        <main class="wrapper">
+            <div class="form">
+                <form class="test">
+                    <label>Логин</label>
+                    <input type="text" id="login" placeholder="Введите имя пользователя" required>
+                    <label>Пароль</label>
+                    <input type="password" id="password" placeholder="Введите пароль" required>
+                    <button type="submit">Вход</button>
+                    Нет аккаунта? <a href="register">Зарегистрироваться</a>
+                    
+                </form>
+            </div>
+        </main>
+        <script>
+
+        </script>
+    </body>
+</html>
