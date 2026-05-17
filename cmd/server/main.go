@@ -38,5 +38,6 @@ func main() {
 	})
 	http.HandleFunc("/", file("static/index.html"))
 	http.HandleFunc("/style.css", file("static/style.css"))
+	http.HandleFunc("/chat.js", file("static/chat.js"))
 	http.ListenAndServe(":8080", nil)
 }
