@@ -144,19 +144,34 @@ input {
     border-radius: 5px;
     cursor: pointer;
     align-items: center;
+
+    /* clear default button style */
+    border: none;
+    background: transparent;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    text-align: left;
+    width: 100%;
+    font: inherit;
 }
 
 .chn-btn:hover {
     background-color: var(--color-surface-hover);
 }
 
+.chn-btn.active {
+    background-color: var(--color-surface-hover);
+    border-left: 3px solid hsl(var(--color-accent-h) var(--color-accent-s) var(--color-accent-l));
+}
+
 .chn-header {
     font-weight: bold;
 }
 
-.chn-content {
+/* .chn-content { */
 
-}
+/* } */
 
 /* chat */
 

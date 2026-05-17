@@ -72,16 +72,16 @@
             </div>
         </template>
         <template id="channel-template">
-            <div class="chn-btn">
+            <button class="chn-btn">
                 <div class="chn-avatar"></div>
+
                 <div class="chn-content">
                     <div class="chn-header"></div>
                     <div class="sub-text"></div>
                 </div>
-            </div>
+            </button>
         </template>
         <script>
-            let socket = null;
             const editable = document.querySelector('.message-input');
             const placeholder = document.querySelector('.placeholder');
             const connectBtn = document.getElementById("connectButton")
@@ -93,71 +93,108 @@
             const chat = document.getElementById("chatbox");
             const msgTemplate = document.getElementById("message-template");
             const chnTemplate = document.getElementById("channel-template");
-            let rooms = new Map();
 
-            const EventChatMessage = "chat.message"
-            const EventUserStatus  = "user.status"
-            const EventJoinRoom    = "user.joinRoom"
-            const EventFetchRooms  = "user.fetchRooms"
-            const EventRoomsList   = "user.roomsList"
+            const EventChatMessage = "chat.message";
+            const EventUserStatus  = "user.status";
+            const EventJoinRoom    = "user.joinRoom";
+            const EventFetchRooms  = "user.fetchRooms";
+            const EventRoomsList   = "user.roomsList";
+
+            let socket = null;
+
+            const state = {
+                currentRoom: null,
+                rooms: new Map(),
+            }
 
             function updatePlaceholder() {
                 placeholder.style.display =
                     editable.textContent.length === 0 ? 'block' : 'none';
             }
 
-            // Замена Enter на отправку сообщения
-            editable.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
-                
-            function addMessage(author, content) {
+            function renderMessage(author, content) {
                 const clone = msgTemplate.content.cloneNode(true);
                 const shouldScroll = isUserAtBottom(chat);
 
                 clone.querySelector(".message-header").textContent = author;
                 clone.querySelector(".message-body").textContent = content;
 
-                document.getElementById("chatbox").appendChild(clone);
+                chat.appendChild(clone);
 
                 if (shouldScroll) {
                     chat.scrollTop = chat.scrollHeight;
                 }
             }
 
-            function renderRoom(room) {
+            function renderRoom(roomId) {
                 const clone = chnTemplate.content.cloneNode(true);
                 const button = clone.firstElementChild;
-
+            
+                button.dataset.roomId = roomId;
                 clone.querySelector(".chn-header").textContent = "Комната";
-                clone.querySelector(".sub-text").textContent = room.id;
-
-                room.element = button
-                rooms.set(room.id, room)
-
-                document.getElementById("channels").appendChild(clone);
+                clone.querySelector(".sub-text").textContent = roomId;
+            
+                button.addEventListener("click", () => {
+                    switchRoom(roomId);
+                });
+            
+                // room.element = button;
+                // state.rooms.set(room.id, room);
+            
+                channels.appendChild(button);
+                return button;
             }
 
-            function addChannel(roomData) {
-                if (rooms.has(roomData.id)) return;
+            function addRoom(roomId) {
+                if (state.rooms.has(roomId)) return state.rooms.get(roomId);
 
-                rooms.set(roomData.id, {id: roomData.id, element: null});
+                const room = {
+                    id: roomId,
+                    messages: [],
+                    element: renderRoom(roomId)
+                };
 
-                renderRoom(roomData)
+                state.rooms.set(roomId, room);
+                // state.rooms.set(roomData.id, {id: roomData.id, element: null, messages: []});
+
+                return room;
             }
 
-            function moveRoomToTop(roomId) {
-                // const el = document.querySelector(`)
+            function addMessage(roomId, author, content) {
+                const room = addRoom(roomId);
+                room.messages.push({author, content})
+
+                if (room.element) {
+                    channels.prepend(room.element);
+                }
+
+                if (state.currentRoom == roomId) {
+                    renderMessage(author, content)
+                }
+            }
+
+            function switchRoom(roomId) {
+                state.currentRoom = roomId;
+                activeRoom.value = roomId;
+            
+                chat.innerHTML = "";
+                const room = state.rooms.get(roomId)
+                if (room) {
+                    for (const msg of room.messages) {
+                        renderMessage(msg.author, msg.content)
+                    };
+                };
+
+                // визуальное выделение
+                document.querySelectorAll(".chn-btn").forEach(btn => {
+                    btn.classList.toggle("active", btn.dataset.roomId === roomId);
+                });
             }
 
             function isUserAtBottom(element, threshold = 5) {
                 return element.scrollHeight - element.scrollTop - element.clientHeight < threshold;
             }
 
-            connect();
             function connect() {
                 if (!socket || socket.readyState === WebSocket.CLOSED) {
                     socket = new WebSocket(`ws://192.168.0.8:8080/ws?id=${id.value}`);
@@ -171,31 +208,21 @@
                             const event = JSON.parse(e.data);
                             switch (event.type) {
                                 case EventChatMessage:
-                                    addMessage(event.data.author, event.data.content);
-
-                                    const room = rooms.get(event.data.room);
-
-                                    if (!room) return;
-                                    console.log(room.element)
-                                    channels.prepend(room.element);
-
+                                    addMessage(event.data.room, event.data.author, event.data.content);
                                     break;
 
                                 case EventUserStatus:
-                                    addMessage(event.data.user, "Теперь " + event.data.state);
+                                    renderMessage(event.data.user, "Теперь " + event.data.state);
                                     break;
                                 case EventJoinRoom:
-                                    addMessage(event.data.user, "Присоединился к комнате " + event.data.room);
+                                    renderMessage(event.data.user, "Присоединился к комнате " + event.data.room);
                                     break;
                                 case EventRoomsList:
-                                    // rooms = event.data.rooms
-                                    // rooms.clear();
                                     event.data.rooms.forEach(roomData => {
-                                        // rooms.set(roomData.id, {id: roomData.id, element: null});
-                                        addChannel(roomData)
+                                        addRoom(roomData.id)
                                     });
                                     break
-                                case _:
+                                default:
                                     console.log("Неизвестный тип сообщения: " + event.type);
                                     break;
                             }
@@ -232,7 +259,6 @@
 
             function send(data) {
                 if (socket && socket.readyState === WebSocket.OPEN) {
-                    // console.log(data)
                     socket.send(data);
                 }
             }
@@ -258,7 +284,17 @@
                 send(JSON.stringify(msg));
             }
 
+            // Замена Enter на отправку сообщения
+            editable.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
             editable.addEventListener('input', updatePlaceholder);
+
+            connect();
         </script>
     </body>
 </html>
